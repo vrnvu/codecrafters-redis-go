@@ -5,17 +5,28 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
 	"github.com/codecrafters-io/redis-starter-go/app/protocol"
 )
 
+var readerPool = sync.Pool{
+	New: func() any { return bufio.NewReaderSize(nil, 4096) },
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
-	reader := bufio.NewReader(conn)
+
+	r := readerPool.Get().(*bufio.Reader)
+	r.Reset(conn)
+	defer func() {
+		r.Reset(nil)
+		readerPool.Put(r)
+	}()
 
 	for {
-		args, err := protocol.ReadArray(reader)
+		args, err := protocol.ReadArray(r)
 		if err != nil {
 			if err == io.EOF {
 				return
