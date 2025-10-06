@@ -1,39 +1,72 @@
 package command
 
 import (
-	"strings"
 	"testing"
 
+	"github.com/codecrafters-io/redis-starter-go/app/protocol"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParse(t *testing.T) {
+func TestFromArray(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name    string
-		in      string
-		want    Command
+		in      protocol.Array
+		want    any
 		wantErr bool
 	}{
-		{"empty", "", nil, true},
-		{"ping-upper", "PING", PingCommand{}, false},
-		{"ping-lower", "ping", PingCommand{}, false},
-		{"echo-upper", "ECHO foo", EchoCommand{Message: "foo"}, false},
-		{"echo-lower", "echo foo", EchoCommand{Message: "foo"}, false},
-		{"unknown", "unknown", nil, true},
+		{
+			name: "ping",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("PING")}},
+			},
+			want: PingCommand{},
+		},
+		{
+			name: "echo",
+			in: protocol.Array{
+				Elems: []protocol.Frame{
+					protocol.BulkString{Bytes: []byte("ECHO")},
+					protocol.BulkString{Bytes: []byte("hello")},
+				},
+			},
+			want: EchoCommand{Message: "hello"},
+		},
+		{
+			name:    "empty",
+			in:      protocol.Array{Elems: []protocol.Frame{}},
+			wantErr: true,
+		},
+		{
+			name:    "null",
+			in:      protocol.Array{Null: true},
+			wantErr: true,
+		},
+		{
+			name: "echo-missing-arg",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("ECHO")}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "unknown",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("UNKNOWN")}},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			args := strings.Fields(tc.in)
-			got, err := Parse(args)
+			got, err := FromArray(tc.in)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			assert.NotNil(t, got)
-			assert.Equal(t, tc.want.Type(), got.Type())
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

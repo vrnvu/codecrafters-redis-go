@@ -15,6 +15,10 @@ var readerPool = sync.Pool{
 	New: func() any { return bufio.NewReaderSize(nil, 4096) },
 }
 
+var writerPool = sync.Pool{
+	New: func() any { return bufio.NewWriterSize(nil, 4096) },
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
@@ -25,32 +29,48 @@ func handleConnection(conn net.Conn) {
 		readerPool.Put(r)
 	}()
 
+	w := writerPool.Get().(*bufio.Writer)
+	w.Reset(conn)
+	defer func() {
+		w.Flush()
+		w.Reset(nil)
+		writerPool.Put(w)
+	}()
+
 	for {
-		args, err := protocol.ReadArray(r)
+		frame, err := protocol.ReadFrame(r)
 		if err != nil {
 			if err == io.EOF {
 				return
 			}
-
-			protocol.WriteError(conn, err.Error())
+			_ = protocol.WriteFrame(w, protocol.Error{Message: err.Error()})
 			return
 		}
 
-		cmd, err := command.Parse(args)
-		if err != nil {
-			protocol.WriteError(conn, err.Error())
+		request, ok := frame.(protocol.Array)
+		if !ok || request.Null || len(request.Elems) == 0 {
+			_ = protocol.WriteFrame(w, protocol.Error{Message: "invalid request"})
 			continue
 		}
 
-		switch cmd := cmd.(type) {
+		// Convert protocol array to command
+		cmd, err := command.FromArray(request)
+		if err != nil {
+			_ = protocol.WriteFrame(w, protocol.Error{Message: err.Error()})
+			continue
+		}
+
+		// Execute command
+		switch c := cmd.(type) {
 		case command.PingCommand:
-			protocol.WriteSimpleString(conn, "PONG")
+			_ = protocol.WriteFrame(w, protocol.SimpleString{Value: "PONG"})
 		case command.EchoCommand:
-			protocol.WriteSimpleString(conn, cmd.Message)
+			_ = protocol.WriteFrame(w, protocol.SimpleString{Value: c.Message})
 		default:
-			protocol.WriteError(conn, "unknown cmd")
+			_ = protocol.WriteFrame(w, protocol.Error{Message: "unknown command"})
 		}
 	}
+
 }
 
 func main() {
