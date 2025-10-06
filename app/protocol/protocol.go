@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func readLine(r *bufio.Reader) (string, error) {
+func ReadLine(r *bufio.Reader) (string, error) {
 	line, err := r.ReadString('\n')
 	if err != nil {
 		return "", err
@@ -23,8 +23,8 @@ func readLine(r *bufio.Reader) (string, error) {
 	return line[:len(line)-2], nil // strip \r\n
 }
 
-func readBulk(r *bufio.Reader) (string, error) {
-	line, err := readLine(r)
+func ReadBulk(r *bufio.Reader) (string, error) {
+	line, err := ReadLine(r)
 	if err != nil || !strings.HasPrefix(line, "$") {
 		return "", fmt.Errorf("invalid bulk header")
 	}
@@ -47,7 +47,7 @@ func readBulk(r *bufio.Reader) (string, error) {
 }
 
 func ReadArray(r *bufio.Reader) ([]string, error) {
-	line, err := readLine(r)
+	line, err := ReadLine(r)
 	if err != nil || !strings.HasPrefix(line, "*") {
 		return nil, fmt.Errorf("invalid array header")
 	}
@@ -59,7 +59,7 @@ func ReadArray(r *bufio.Reader) ([]string, error) {
 
 	parts := make([]string, 0, n)
 	for range n {
-		part, err := readBulk(r)
+		part, err := ReadBulk(r)
 		if err != nil {
 			return nil, err
 		}

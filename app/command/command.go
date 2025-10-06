@@ -5,13 +5,19 @@ import (
 	"strings"
 )
 
+type CommandType int
+
+const (
+	Ping CommandType = iota
+)
+
 type Command interface {
-	Name() string
+	Type() CommandType
 }
 
 type PingCommand struct{}
 
-func (PingCommand) Name() string { return "PING" }
+func (PingCommand) Type() CommandType { return Ping }
 
 func Parse(args []string) (Command, error) {
 	if len(args) == 0 {
