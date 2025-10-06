@@ -18,6 +18,8 @@ func TestParse(t *testing.T) {
 		{"empty", "", nil, true},
 		{"ping-upper", "PING", PingCommand{}, false},
 		{"ping-lower", "ping", PingCommand{}, false},
+		{"echo-upper", "ECHO foo", EchoCommand{Message: "foo"}, false},
+		{"echo-lower", "echo foo", EchoCommand{Message: "foo"}, false},
 		{"unknown", "unknown", nil, true},
 	}
 	for _, tc := range cases {

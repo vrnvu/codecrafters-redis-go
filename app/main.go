@@ -31,9 +31,11 @@ func handleConnection(conn net.Conn) {
 			continue
 		}
 
-		switch cmd.(type) {
+		switch cmd := cmd.(type) {
 		case command.PingCommand:
 			protocol.WriteSimpleString(conn, "PONG")
+		case command.EchoCommand:
+			protocol.WriteSimpleString(conn, cmd.Message)
 		default:
 			protocol.WriteError(conn, "unknown cmd")
 		}
