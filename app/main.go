@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/codecrafters-io/redis-starter-go/app/server"
+	"github.com/codecrafters-io/redis-starter-go/app/store"
 )
 
 func main() {
@@ -13,7 +14,9 @@ func main() {
 		log.Fatalf("Listen error: %v", err)
 	}
 
-	server := server.NewServer(listener)
+	store := store.NewStore()
+
+	server := server.NewServer(listener, store)
 	defer server.Close()
 
 	log.Println("Listening on :6379")

@@ -9,18 +9,20 @@ import (
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
 	"github.com/codecrafters-io/redis-starter-go/app/protocol"
+	"github.com/codecrafters-io/redis-starter-go/app/store"
 )
 
 type Server struct {
 	listener   net.Listener
 	readerPool *sync.Pool
 	writerPool *sync.Pool
+	store      *store.Store
 }
 
-func NewServer(listener net.Listener) *Server {
+func NewServer(listener net.Listener, store *store.Store) *Server {
 	readerPool := sync.Pool{New: func() any { return bufio.NewReaderSize(nil, 4096) }}
 	writerPool := sync.Pool{New: func() any { return bufio.NewWriterSize(nil, 4096) }}
-	return &Server{listener: listener, readerPool: &readerPool, writerPool: &writerPool}
+	return &Server{listener: listener, readerPool: &readerPool, writerPool: &writerPool, store: store}
 }
 
 func (s *Server) Accept() (net.Conn, error) {
@@ -98,7 +100,13 @@ func (s *Server) HandleConnection(conn net.Conn) {
 				return
 			}
 		case command.SetCommand:
-			res := c.Execute()
+			res := c.Execute(s.store)
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+				return
+			}
+		case command.GetCommand:
+			res := c.Execute(s.store)
 			if err := res.Write(writer); err != nil {
 				log.Printf("writing response: %v", err)
 				return

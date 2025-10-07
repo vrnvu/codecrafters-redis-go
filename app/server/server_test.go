@@ -3,6 +3,8 @@ package server
 import (
 	"net"
 	"testing"
+
+	"github.com/codecrafters-io/redis-starter-go/app/store"
 )
 
 type TestListener struct{}
@@ -18,10 +20,7 @@ func (l *TestListener) Addr() net.Addr {
 }
 
 func TestServer(t *testing.T) {
-	listener, err := net.Listen("tcp", ":6379")
-	if err != nil {
-		t.Fatalf("Listen error: %v", err)
-	}
-	server := NewServer(listener)
+	testListener := &TestListener{}
+	server := NewServer(testListener, store.NewStore())
 	defer server.Close()
 }
