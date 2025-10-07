@@ -1,7 +1,6 @@
 package command
 
 import (
-	"bufio"
 	"fmt"
 	"strings"
 
@@ -10,16 +9,16 @@ import (
 
 type PingCommand struct{}
 
-func (c *PingCommand) Handle(w *bufio.Writer) error {
-	return protocol.WriteFrame(w, protocol.SimpleString{Value: "PONG"})
+func (c *PingCommand) Execute() protocol.SimpleString {
+	return protocol.SimpleString{Value: "PONG"}
 }
 
 type EchoCommand struct {
 	Message string
 }
 
-func (c *EchoCommand) Handle(w *bufio.Writer) error {
-	return protocol.WriteFrame(w, protocol.SimpleString{Value: c.Message})
+func (c *EchoCommand) Execute() protocol.SimpleString {
+	return protocol.SimpleString{Value: c.Message}
 }
 
 type SetCommand struct {
@@ -27,8 +26,8 @@ type SetCommand struct {
 	Value string
 }
 
-func (c *SetCommand) Handle(w *bufio.Writer) error {
-	return protocol.WriteFrame(w, protocol.SimpleString{Value: "OK"})
+func (c *SetCommand) Execute() protocol.SimpleString {
+	return protocol.SimpleString{Value: "OK"}
 }
 
 // FromArray converts a protocol.Array to a command

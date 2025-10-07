@@ -9,7 +9,7 @@ import (
 
 // Frame is a single RESP message node that can encode itself to a writer.
 type Frame interface {
-	WriteTo(w *bufio.Writer) error
+	Write(w *bufio.Writer) error
 }
 
 // SimpleString represents a RESP Simple String: +OK\r\n
@@ -17,11 +17,16 @@ type SimpleString struct {
 	Value string
 }
 
-func (s SimpleString) WriteTo(w *bufio.Writer) error {
-	if _, err := w.WriteString("+" + s.Value + "\r\n"); err != nil {
+func (s SimpleString) Write(w *bufio.Writer) error {
+	n, err := w.WriteString("+" + s.Value + "\r\n")
+	if err != nil {
 		return err
 	}
-	return nil
+	if n != len(s.Value)+3 {
+		return fmt.Errorf("expected to write %d bytes, wrote %d", len(s.Value)+3, n)
+	}
+
+	return w.Flush()
 }
 
 // Error represents a RESP Error: -ERR message\r\n
@@ -29,11 +34,16 @@ type Error struct {
 	Message string
 }
 
-func (e Error) WriteTo(w *bufio.Writer) error {
-	if _, err := w.WriteString("-ERR " + e.Message + "\r\n"); err != nil {
+func (e Error) Write(w *bufio.Writer) error {
+	n, err := w.WriteString("-ERR " + e.Message + "\r\n")
+	if err != nil {
 		return err
 	}
-	return nil
+	if n != len(e.Message)+7 {
+		return fmt.Errorf("expected to write %d bytes, wrote %d", len(e.Message)+7, n)
+	}
+
+	return w.Flush()
 }
 
 // BulkString represents a RESP Bulk String: $<len>\r\n<data>\r\n
@@ -41,25 +51,51 @@ type BulkString struct {
 	Bytes []byte
 }
 
-func (b BulkString) WriteTo(w *bufio.Writer) error {
-	if _, err := fmt.Fprintf(w, "$%d\r\n", len(b.Bytes)); err != nil {
+func (b BulkString) Write(w *bufio.Writer) error {
+	n, err := fmt.Fprintf(w, "$%d\r\n", len(b.Bytes))
+	if err != nil {
 		return err
 	}
-	if _, err := w.Write(b.Bytes); err != nil {
+	// The header is "$<digits>\r\n" - we need to calculate actual digit length
+	expectedHeaderLen := len(fmt.Sprintf("%d", len(b.Bytes))) + 3 // $ + digits + \r\n
+	if n != expectedHeaderLen {
+		return fmt.Errorf("expected to write %d bytes, wrote %d", expectedHeaderLen, n)
+	}
+
+	n, err = w.Write(b.Bytes)
+	if err != nil {
 		return err
 	}
-	if _, err := w.WriteString("\r\n"); err != nil {
+	if n != len(b.Bytes) {
+		return fmt.Errorf("expected to write %d bytes, wrote %d", len(b.Bytes), n)
+	}
+
+	n, err = w.WriteString("\r\n")
+	if err != nil {
 		return err
 	}
-	return nil
+
+	if n != 2 {
+		return fmt.Errorf("expected to write 2 bytes, wrote %d", n)
+	}
+
+	return w.Flush()
 }
 
 // BulkNullString represents a RESP Null Bulk String: $-1\r\n
 type BulkNullString struct{}
 
-func (BulkNullString) WriteTo(w *bufio.Writer) error {
-	_, err := w.WriteString("$-1\r\n")
-	return err
+func (BulkNullString) Write(w *bufio.Writer) error {
+	n, err := w.WriteString("$-1\r\n")
+	if err != nil {
+		return err
+	}
+
+	if n != 5 {
+		return fmt.Errorf("expected to write 5 bytes, wrote %d", n)
+	}
+
+	return w.Flush()
 }
 
 // Array represents a RESP Array. When Null is true, it encodes as *-1\r\n
@@ -68,26 +104,30 @@ type Array struct {
 	Null  bool
 }
 
-func (a Array) WriteTo(w *bufio.Writer) error {
+func (a Array) Write(w *bufio.Writer) error {
 	if a.Null {
-		_, err := w.WriteString("*-1\r\n")
-		return err
-	}
-	if _, err := fmt.Fprintf(w, "*%d\r\n", len(a.Elems)); err != nil {
-		return err
-	}
-	for _, el := range a.Elems {
-		if err := el.WriteTo(w); err != nil {
+		n, err := w.WriteString("*-1\r\n")
+		if err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-// WriteFrame encodes f to w and flushes.
-func WriteFrame(w *bufio.Writer, f Frame) error {
-	if err := f.WriteTo(w); err != nil {
+		if n != 4 {
+			return fmt.Errorf("expected to write 4 bytes, wrote %d", n)
+		}
 		return err
+	}
+	n, err := fmt.Fprintf(w, "*%d\r\n", len(a.Elems))
+	if err != nil {
+		return err
+	}
+	// The header is "*<digits>\r\n" - we need to calculate actual digit length
+	expectedHeaderLen := len(fmt.Sprintf("%d", len(a.Elems))) + 3 // * + digits + \r\n
+	if n != expectedHeaderLen {
+		return fmt.Errorf("expected to write %d bytes, wrote %d", expectedHeaderLen, n)
+	}
+	for _, el := range a.Elems {
+		if err := el.Write(w); err != nil {
+			return err
+		}
 	}
 	return w.Flush()
 }

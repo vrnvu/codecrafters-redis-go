@@ -54,7 +54,7 @@ func TestWriteFrame(t *testing.T) {
 			t.Parallel()
 			var buf bytes.Buffer
 			w := bufio.NewWriter(&buf)
-			err := WriteFrame(w, tc.in)
+			err := tc.in.Write(w)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.out, buf.Bytes())
 		})
