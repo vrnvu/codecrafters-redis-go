@@ -56,6 +56,13 @@ func TestFromArray(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "set",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("SET")}, protocol.BulkString{Bytes: []byte("key")}, protocol.BulkString{Bytes: []byte("value")}},
+			},
+			want: SetCommand{Key: "key", Value: "value"},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

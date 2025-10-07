@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bufio"
 	"fmt"
 	"strings"
 
@@ -8,8 +9,26 @@ import (
 )
 
 type PingCommand struct{}
+
+func (c *PingCommand) Handle(w *bufio.Writer) error {
+	return protocol.WriteFrame(w, protocol.SimpleString{Value: "PONG"})
+}
+
 type EchoCommand struct {
 	Message string
+}
+
+func (c *EchoCommand) Handle(w *bufio.Writer) error {
+	return protocol.WriteFrame(w, protocol.SimpleString{Value: c.Message})
+}
+
+type SetCommand struct {
+	Key   string
+	Value string
+}
+
+func (c *SetCommand) Handle(w *bufio.Writer) error {
+	return protocol.WriteFrame(w, protocol.SimpleString{Value: "OK"})
 }
 
 // FromArray converts a protocol.Array to a command
@@ -36,6 +55,19 @@ func FromArray(arr protocol.Array) (any, error) {
 			return nil, fmt.Errorf("echo argument must be a bulk string")
 		}
 		return EchoCommand{Message: string(msg.Bytes)}, nil
+	case "SET":
+		if len(arr.Elems) < 2 {
+			return nil, fmt.Errorf("set command requires 1 argument")
+		}
+		key, ok := arr.Elems[1].(protocol.BulkString)
+		if !ok {
+			return nil, fmt.Errorf("set key must be a bulk string")
+		}
+		value, ok := arr.Elems[2].(protocol.BulkString)
+		if !ok {
+			return nil, fmt.Errorf("set value must be a bulk string")
+		}
+		return SetCommand{Key: string(key.Bytes), Value: string(value.Bytes)}, nil
 	default:
 		return nil, fmt.Errorf("unknown command: %s", cmd)
 	}

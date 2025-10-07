@@ -155,7 +155,7 @@ func ReadFrame(r *bufio.Reader) (Frame, error) {
 			return nil, fmt.Errorf("invalid array length")
 		}
 		elems := make([]Frame, 0, n)
-		for i := 0; i < n; i++ {
+		for range n {
 			el, err := ReadFrame(r)
 			if err != nil {
 				return nil, err

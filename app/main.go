@@ -53,19 +53,19 @@ func handleConnection(conn net.Conn) {
 			continue
 		}
 
-		// Convert protocol array to command
 		cmd, err := command.FromArray(request)
 		if err != nil {
 			_ = protocol.WriteFrame(w, protocol.Error{Message: err.Error()})
 			continue
 		}
 
-		// Execute command
 		switch c := cmd.(type) {
 		case command.PingCommand:
-			_ = protocol.WriteFrame(w, protocol.SimpleString{Value: "PONG"})
+			c.Handle(w)
 		case command.EchoCommand:
-			_ = protocol.WriteFrame(w, protocol.SimpleString{Value: c.Message})
+			c.Handle(w)
+		case command.SetCommand:
+			c.Handle(w)
 		default:
 			_ = protocol.WriteFrame(w, protocol.Error{Message: "unknown command"})
 		}
