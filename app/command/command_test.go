@@ -2,6 +2,7 @@ package command
 
 import (
 	"testing"
+	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/protocol"
 	"github.com/stretchr/testify/assert"
@@ -62,6 +63,34 @@ func TestFromArray(t *testing.T) {
 				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("SET")}, protocol.BulkString{Bytes: []byte("key")}, protocol.BulkString{Bytes: []byte("value")}},
 			},
 			want: SetCommand{Key: "key", Value: "value"},
+		},
+		{
+			name: "set-ttl ex",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("SET")}, protocol.BulkString{Bytes: []byte("key")}, protocol.BulkString{Bytes: []byte("value")}, protocol.BulkString{Bytes: []byte("EX")}, protocol.BulkString{Bytes: []byte("10")}},
+			},
+			want: SetTTLCommand{Key: "key", Value: "value", TTL: 10 * time.Second},
+		},
+		{
+			name: "set-ttl px",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("SET")}, protocol.BulkString{Bytes: []byte("key")}, protocol.BulkString{Bytes: []byte("value")}, protocol.BulkString{Bytes: []byte("PX")}, protocol.BulkString{Bytes: []byte("10")}},
+			},
+			want: SetTTLCommand{Key: "key", Value: "value", TTL: 10 * time.Millisecond},
+		},
+		{
+			name: "set-ttl invalid",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("SET")}, protocol.BulkString{Bytes: []byte("key")}, protocol.BulkString{Bytes: []byte("value")}, protocol.BulkString{Bytes: []byte("INVALID")}, protocol.BulkString{Bytes: []byte("10")}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "set-ttl invalid value",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("SET")}, protocol.BulkString{Bytes: []byte("key")}, protocol.BulkString{Bytes: []byte("value")}, protocol.BulkString{Bytes: []byte("EX")}, protocol.BulkString{Bytes: []byte("0")}},
+			},
+			wantErr: true,
 		},
 		{
 			name: "get",
