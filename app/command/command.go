@@ -3,7 +3,6 @@ package command
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -109,56 +108,33 @@ read:
 		return protocol.Array{Elems: []protocol.Frame{}}
 	}
 
-	for _, cmd := range c.Commands {
+	results := make([]protocol.Frame, len(c.Commands))
+	for i, cmd := range c.Commands {
 		switch c := cmd.(type) {
 		case PingCommand:
-			res := c.Execute()
-			if err := res.Write(writer); err != nil {
-				log.Printf("writing response: %v", err)
-			}
+			results[i] = c.Execute()
 		case EchoCommand:
-			res := c.Execute()
-			if err := res.Write(writer); err != nil {
-				log.Printf("writing response: %v", err)
-			}
+			results[i] = c.Execute()
 		case SetCommand:
-			res := c.Execute(store)
-			if err := res.Write(writer); err != nil {
-				log.Printf("writing response: %v", err)
-			}
+			results[i] = c.Execute(store)
 		case SetTTLCommand:
-			res := c.Execute(store)
-			if err := res.Write(writer); err != nil {
-				log.Printf("writing response: %v", err)
-			}
+			results[i] = c.Execute(store)
 		case GetCommand:
-			res := c.Execute(store)
-			if err := res.Write(writer); err != nil {
-				log.Printf("writing response: %v", err)
-			}
+			results[i] = c.Execute(store)
 		case IncrCommand:
-			res := c.Execute(store)
-			if err := res.Write(writer); err != nil {
-				log.Printf("writing response: %v", err)
-			}
+			results[i] = c.Execute(store)
 		case ExecCommand:
 			msg := protocol.Error{Message: "EXEC without MULTI"}
-			if err := msg.Write(writer); err != nil {
-				log.Printf("writing response: %v", err)
-			}
+			results[i] = msg
 		case MultiCommand:
 			msg := protocol.Error{Message: "nested multi commands are not allowed"}
-			if err := msg.Write(writer); err != nil {
-				log.Printf("writing response: %v", err)
-			}
+			results[i] = msg
 		default:
-			if err := (protocol.Error{Message: "unknown command"}.Write(writer)); err != nil {
-				log.Printf("writing error response: %v", err)
-			}
+			results[i] = protocol.Error{Message: "unknown command"}
 		}
 	}
 
-	return protocol.SimpleString{Value: "OK"}
+	return protocol.Array{Elems: results}
 }
 
 // FromArray converts a protocol.Array to a command
