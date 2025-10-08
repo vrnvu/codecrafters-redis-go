@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"strconv"
 	"sync"
 	"time"
@@ -58,7 +59,7 @@ func (s *Store) Incr(key string) (int, error) {
 
 	intValue, err := strconv.Atoi(value.Value)
 	if err != nil {
-		return 0, err
+		return 0, errors.New("value is not an integer or out of range")
 	}
 
 	s.store[key] = Entry{Value: strconv.Itoa(intValue + 1)}
