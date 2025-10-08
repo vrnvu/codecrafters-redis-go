@@ -105,6 +105,12 @@ func (s *Server) HandleConnection(conn net.Conn) {
 				log.Printf("writing response: %v", err)
 				return
 			}
+		case command.SetTTLCommand:
+			res := c.Execute(s.store)
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+				return
+			}
 		case command.GetCommand:
 			res := c.Execute(s.store)
 			if err := res.Write(writer); err != nil {
