@@ -129,6 +129,12 @@ func (s *Server) HandleConnection(conn net.Conn) {
 				log.Printf("writing response: %v", err)
 				return
 			}
+		case command.DiscardCommand:
+			msg := protocol.Error{Message: "DISCARD without MULTI"}
+			if err := msg.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+				return
+			}
 		case command.MultiCommand:
 			res := c.Execute(reader, writer, s.store)
 			if err := res.Write(writer); err != nil {

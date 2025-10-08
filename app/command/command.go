@@ -74,6 +74,8 @@ func (c *IncrCommand) Execute(store *store.Store) protocol.Frame {
 
 type ExecCommand struct{}
 
+type DiscardCommand struct{}
+
 type MultiCommand struct {
 	Commands []any
 }
@@ -98,6 +100,8 @@ read:
 			return protocol.Error{Message: "nested multi commands are not allowed"}
 		case ExecCommand:
 			break read
+		case DiscardCommand:
+			return protocol.SimpleString{Value: "OK"}
 		default:
 			c.Commands = append(c.Commands, cmd)
 			protocol.SimpleString{Value: "QUEUED"}.Write(writer)
@@ -235,6 +239,8 @@ func FromArray(arr protocol.Array) (any, error) {
 		return MultiCommand{Commands: []any{}}, nil
 	case "EXEC":
 		return ExecCommand{}, nil
+	case "DISCARD":
+		return DiscardCommand{}, nil
 	default:
 		return nil, fmt.Errorf("unknown command: %s", cmd)
 	}
