@@ -140,7 +140,7 @@ read:
 				log.Printf("writing response: %v", err)
 			}
 		case ExecCommand:
-			msg := protocol.Error{Message: "EXEC without MULTI is not allowed"}
+			msg := protocol.Error{Message: "EXEC without MULTI"}
 			if err := msg.Write(writer); err != nil {
 				log.Printf("writing response: %v", err)
 			}
