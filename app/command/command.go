@@ -106,7 +106,7 @@ read:
 	}
 
 	if len(c.Commands) == 0 {
-		return protocol.Array{Null: true}
+		return protocol.Array{Elems: []protocol.Frame{}}
 	}
 
 	for _, cmd := range c.Commands {
