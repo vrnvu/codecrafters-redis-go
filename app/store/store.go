@@ -61,5 +61,6 @@ func (s *Store) Incr(key string) (int, error) {
 		return 0, err
 	}
 
+	s.store[key] = Entry{Value: strconv.Itoa(intValue + 1)}
 	return intValue + 1, nil
 }
