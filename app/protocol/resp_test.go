@@ -44,6 +44,9 @@ func TestWriteFrame(t *testing.T) {
 		out  []byte
 	}{
 		{"simple", SimpleString{Value: "OK"}, []byte("+OK\r\n")},
+		{"integer 0", Integer{Value: 0}, []byte(":0\r\n")},
+		{"integer 10", Integer{Value: 10}, []byte(":10\r\n")},
+		{"integer -123", Integer{Value: -123}, []byte(":-123\r\n")},
 		{"error", Error{Message: "oops"}, []byte("-ERR oops\r\n")},
 		{"bulk", BulkString{Bytes: []byte("foo")}, []byte("$3\r\nfoo\r\n")},
 		{"bulk-null", BulkNullString{}, []byte("$-1\r\n")},

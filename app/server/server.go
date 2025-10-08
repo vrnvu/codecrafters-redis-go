@@ -117,6 +117,12 @@ func (s *Server) HandleConnection(conn net.Conn) {
 				log.Printf("writing response: %v", err)
 				return
 			}
+		case command.IncrCommand:
+			res := c.Execute(s.store)
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+				return
+			}
 		default:
 			if err := (protocol.Error{Message: "unknown command"}.Write(writer)); err != nil {
 				log.Printf("writing error response: %v", err)

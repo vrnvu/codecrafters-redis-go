@@ -29,6 +29,29 @@ func (s SimpleString) Write(w *bufio.Writer) error {
 	return w.Flush()
 }
 
+// Integer represents a RESP Integer: :1\r\n
+type Integer struct {
+	Value int
+}
+
+func (i Integer) Write(w *bufio.Writer) error {
+	var b [32]byte
+	buf := b[:0]
+	buf = append(buf, ':')
+	buf = strconv.AppendInt(buf, int64(i.Value), 10)
+	buf = append(buf, '\r', '\n')
+	n, err := w.Write(buf)
+	if err != nil {
+		return err
+	}
+
+	if n != len(buf) {
+		return fmt.Errorf("expected to write %d bytes, wrote %d", len(buf), n)
+	}
+
+	return w.Flush()
+}
+
 // Error represents a RESP Error: -ERR message\r\n
 type Error struct {
 	Message string

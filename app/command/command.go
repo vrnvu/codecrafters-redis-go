@@ -58,6 +58,19 @@ func (c *GetCommand) Execute(store *store.Store) protocol.Frame {
 	return protocol.SimpleString{Value: value}
 }
 
+type IncrCommand struct {
+	Key string
+}
+
+func (c *IncrCommand) Execute(store *store.Store) protocol.Frame {
+	value, err := store.Incr(c.Key)
+	if err != nil {
+		return protocol.Error{Message: err.Error()}
+	}
+
+	return protocol.Integer{Value: value}
+}
+
 // FromArray converts a protocol.Array to a command
 func FromArray(arr protocol.Array) (any, error) {
 	if arr.Null || len(arr.Elems) == 0 {

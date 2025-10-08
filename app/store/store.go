@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strconv"
 	"sync"
 	"time"
 )
@@ -43,4 +44,22 @@ func (s *Store) Get(key string) (string, bool) {
 	}
 
 	return value.Value, true
+}
+
+func (s *Store) Incr(key string) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	value, ok := s.store[key]
+	if !ok {
+		s.store[key] = Entry{Value: "1"}
+		return 1, nil
+	}
+
+	intValue, err := strconv.Atoi(value.Value)
+	if err != nil {
+		return 0, err
+	}
+
+	return intValue + 1, nil
 }
