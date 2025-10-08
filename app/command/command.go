@@ -73,9 +73,7 @@ func (c *IncrCommand) Execute(store *store.Store) protocol.Frame {
 	return protocol.Integer{Value: value}
 }
 
-type ExecCommand struct {
-	Commands []any
-}
+type ExecCommand struct{}
 
 type MultiCommand struct {
 	Commands []any
@@ -255,6 +253,8 @@ func FromArray(arr protocol.Array) (any, error) {
 		return IncrCommand{Key: string(key.Bytes)}, nil
 	case "MULTI":
 		return MultiCommand{Commands: []any{}}, nil
+	case "EXEC":
+		return ExecCommand{}, nil
 	default:
 		return nil, fmt.Errorf("unknown command: %s", cmd)
 	}
