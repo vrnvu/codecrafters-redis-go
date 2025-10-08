@@ -105,6 +105,10 @@ read:
 		}
 	}
 
+	if len(c.Commands) == 0 {
+		return protocol.Array{Null: true}
+	}
+
 	for _, cmd := range c.Commands {
 		switch c := cmd.(type) {
 		case PingCommand:
