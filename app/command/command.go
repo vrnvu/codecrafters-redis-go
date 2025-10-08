@@ -156,6 +156,15 @@ func FromArray(arr protocol.Array) (any, error) {
 			return nil, fmt.Errorf("get key must be a bulk string")
 		}
 		return GetCommand{Key: string(key.Bytes)}, nil
+	case "INCR":
+		if len(arr.Elems) < 2 {
+			return nil, fmt.Errorf("incr command requires 1 argument")
+		}
+		key, ok := arr.Elems[1].(protocol.BulkString)
+		if !ok {
+			return nil, fmt.Errorf("incr key must be a bulk string")
+		}
+		return IncrCommand{Key: string(key.Bytes)}, nil
 	default:
 		return nil, fmt.Errorf("unknown command: %s", cmd)
 	}
