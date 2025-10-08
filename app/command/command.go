@@ -1,7 +1,9 @@
 package command
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -69,6 +71,92 @@ func (c *IncrCommand) Execute(store *store.Store) protocol.Frame {
 	}
 
 	return protocol.Integer{Value: value}
+}
+
+type ExecCommand struct {
+	Commands []any
+}
+
+type MultiCommand struct {
+	Commands []any
+}
+
+func (c *MultiCommand) Execute(reader *bufio.Reader, writer *bufio.Writer, store *store.Store) protocol.Frame {
+	protocol.SimpleString{Value: "OK"}.Write(writer)
+
+read:
+	for {
+		frame, err := protocol.ReadFrame(reader)
+		if err != nil {
+			return protocol.Error{Message: err.Error()}
+		}
+
+		cmd, err := FromArray(frame.(protocol.Array))
+		if err != nil {
+			return protocol.Error{Message: err.Error()}
+		}
+
+		switch cmd.(type) {
+		case MultiCommand:
+			return protocol.Error{Message: "nested multi commands are not allowed"}
+		case ExecCommand:
+			break read
+		default:
+			c.Commands = append(c.Commands, cmd)
+			protocol.SimpleString{Value: "QUEUED"}.Write(writer)
+		}
+	}
+
+	for _, cmd := range c.Commands {
+		switch c := cmd.(type) {
+		case PingCommand:
+			res := c.Execute()
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+			}
+		case EchoCommand:
+			res := c.Execute()
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+			}
+		case SetCommand:
+			res := c.Execute(store)
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+			}
+		case SetTTLCommand:
+			res := c.Execute(store)
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+			}
+		case GetCommand:
+			res := c.Execute(store)
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+			}
+		case IncrCommand:
+			res := c.Execute(store)
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+			}
+		case ExecCommand:
+			msg := protocol.Error{Message: "EXEC without MULTI is not allowed"}
+			if err := msg.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+			}
+		case MultiCommand:
+			msg := protocol.Error{Message: "nested multi commands are not allowed"}
+			if err := msg.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+			}
+		default:
+			if err := (protocol.Error{Message: "unknown command"}.Write(writer)); err != nil {
+				log.Printf("writing error response: %v", err)
+			}
+		}
+	}
+
+	return protocol.SimpleString{Value: "OK"}
 }
 
 // FromArray converts a protocol.Array to a command
@@ -165,6 +253,8 @@ func FromArray(arr protocol.Array) (any, error) {
 			return nil, fmt.Errorf("incr key must be a bulk string")
 		}
 		return IncrCommand{Key: string(key.Bytes)}, nil
+	case "MULTI":
+		return MultiCommand{Commands: []any{}}, nil
 	default:
 		return nil, fmt.Errorf("unknown command: %s", cmd)
 	}

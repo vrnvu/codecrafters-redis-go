@@ -106,6 +106,13 @@ func TestFromArray(t *testing.T) {
 			},
 			want: IncrCommand{Key: "key"},
 		},
+		{
+			name: "multi",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("MULTI")}},
+			},
+			want: MultiCommand{Commands: []any{}},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

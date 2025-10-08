@@ -123,6 +123,18 @@ func (s *Server) HandleConnection(conn net.Conn) {
 				log.Printf("writing response: %v", err)
 				return
 			}
+		case command.ExecCommand:
+			msg := protocol.Error{Message: "EXEC without MULTI is not allowed"}
+			if err := msg.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+				return
+			}
+		case command.MultiCommand:
+			res := c.Execute(reader, writer, s.store)
+			if err := res.Write(writer); err != nil {
+				log.Printf("writing response: %v", err)
+				return
+			}
 		default:
 			if err := (protocol.Error{Message: "unknown command"}.Write(writer)); err != nil {
 				log.Printf("writing error response: %v", err)
