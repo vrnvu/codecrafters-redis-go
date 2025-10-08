@@ -99,6 +99,13 @@ func TestFromArray(t *testing.T) {
 			},
 			want: GetCommand{Key: "key"},
 		},
+		{
+			name: "incr",
+			in: protocol.Array{
+				Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("INCR")}, protocol.BulkString{Bytes: []byte("key")}},
+			},
+			want: IncrCommand{Key: "key"},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
