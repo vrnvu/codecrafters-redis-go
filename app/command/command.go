@@ -52,7 +52,7 @@ type GetCommand struct {
 func (c *GetCommand) Execute(store *store.Store) protocol.Frame {
 	value, ok := store.Get(c.Key)
 	if !ok {
-		return protocol.Error{Message: "not found"}
+		return protocol.BulkNullString{}
 	}
 
 	return protocol.SimpleString{Value: value}
