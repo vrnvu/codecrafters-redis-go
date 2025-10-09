@@ -81,7 +81,7 @@ type MultiCommand struct {
 	Commands []any
 }
 
-func (c *MultiCommand) Execute(reader *bufio.Reader, writer *bufio.Writer, store *store.Store) protocol.Frame {
+func (c *MultiCommand) Execute(reader *bufio.Reader, writer *bufio.Writer, store *store.Store, file *rdb.File) protocol.Frame {
 	protocol.SimpleString{Value: "OK"}.Write(writer)
 
 read:
@@ -134,6 +134,8 @@ read:
 		case MultiCommand:
 			msg := protocol.Error{Message: "nested multi commands are not allowed"}
 			results[i] = msg
+		case ConfigCommand:
+			results[i] = c.Execute(file)
 		default:
 			results[i] = protocol.Error{Message: "unknown command"}
 		}

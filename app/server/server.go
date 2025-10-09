@@ -138,7 +138,7 @@ func (s *Server) HandleConnection(conn net.Conn) {
 				return
 			}
 		case command.MultiCommand:
-			res := c.Execute(reader, writer, s.store)
+			res := c.Execute(reader, writer, s.store, s.file)
 			if err := res.Write(writer); err != nil {
 				log.Printf("writing response: %v", err)
 				return
