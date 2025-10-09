@@ -260,10 +260,18 @@ func FromArray(arr protocol.Array) (any, error) {
 	case "DISCARD":
 		return DiscardCommand{}, nil
 	case "CONFIG":
-		if len(arr.Elems) < 2 {
-			return nil, fmt.Errorf("config command requires 1 argument")
+		if len(arr.Elems) < 3 {
+			return nil, fmt.Errorf("config command requires 2 argument")
 		}
-		config, ok := arr.Elems[1].(protocol.BulkString)
+		isGet, ok := arr.Elems[1].(protocol.BulkString)
+		if !ok {
+			return nil, fmt.Errorf("config isGet argument must be a bulk string")
+		}
+		if string(isGet.Bytes) != "GET" {
+			return nil, fmt.Errorf("config isGet command requires GET argument")
+		}
+
+		config, ok := arr.Elems[2].(protocol.BulkString)
 		if !ok {
 			return nil, fmt.Errorf("config argument must be a bulk string")
 		}
