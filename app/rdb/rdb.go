@@ -17,7 +17,7 @@ func NewFile(dir, dbFilename string) *File {
 
 func (f *File) Open() error {
 	path := filepath.Join(f.Dir, f.DBFilename)
-	db, err := os.Open(path)
+	db, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
