@@ -9,6 +9,7 @@ import (
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
 	"github.com/codecrafters-io/redis-starter-go/app/protocol"
+	"github.com/codecrafters-io/redis-starter-go/app/rdb"
 	"github.com/codecrafters-io/redis-starter-go/app/store"
 )
 
@@ -17,12 +18,13 @@ type Server struct {
 	readerPool *sync.Pool
 	writerPool *sync.Pool
 	store      *store.Store
+	file       *rdb.File
 }
 
-func NewServer(listener net.Listener, store *store.Store) *Server {
+func NewServer(listener net.Listener, store *store.Store, file *rdb.File) *Server {
 	readerPool := sync.Pool{New: func() any { return bufio.NewReaderSize(nil, 4096) }}
 	writerPool := sync.Pool{New: func() any { return bufio.NewWriterSize(nil, 4096) }}
-	return &Server{listener: listener, readerPool: &readerPool, writerPool: &writerPool, store: store}
+	return &Server{listener: listener, readerPool: &readerPool, writerPool: &writerPool, store: store, file: file}
 }
 
 func (s *Server) Accept() (net.Conn, error) {
