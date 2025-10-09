@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/protocol"
+	"github.com/codecrafters-io/redis-starter-go/app/rdb"
 	"github.com/codecrafters-io/redis-starter-go/app/store"
 )
 
@@ -141,6 +142,21 @@ read:
 	return protocol.Array{Elems: results}
 }
 
+type ConfigCommand struct {
+	Config string
+}
+
+func (c *ConfigCommand) Execute(file *rdb.File) protocol.Frame {
+	switch c.Config {
+	case "dbfilename":
+		return protocol.Array{Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("dbfilename")}, protocol.BulkString{Bytes: []byte(file.DBFilename)}}}
+	case "dir":
+		return protocol.Array{Elems: []protocol.Frame{protocol.BulkString{Bytes: []byte("dir")}, protocol.BulkString{Bytes: []byte(file.Dir)}}}
+	default:
+		return protocol.Error{Message: fmt.Sprintf("unknown config: %s", c.Config)}
+	}
+}
+
 // FromArray converts a protocol.Array to a command
 func FromArray(arr protocol.Array) (any, error) {
 	if arr.Null || len(arr.Elems) == 0 {
@@ -241,6 +257,22 @@ func FromArray(arr protocol.Array) (any, error) {
 		return ExecCommand{}, nil
 	case "DISCARD":
 		return DiscardCommand{}, nil
+	case "CONFIG":
+		if len(arr.Elems) < 2 {
+			return nil, fmt.Errorf("config command requires 1 argument")
+		}
+		config, ok := arr.Elems[1].(protocol.BulkString)
+		if !ok {
+			return nil, fmt.Errorf("config argument must be a bulk string")
+		}
+		switch string(config.Bytes) {
+		case "dir":
+			return ConfigCommand{Config: string(config.Bytes)}, nil
+		case "dbfilename":
+			return ConfigCommand{Config: string(config.Bytes)}, nil
+		default:
+			return nil, fmt.Errorf("unknown config: %s", string(config.Bytes))
+		}
 	default:
 		return nil, fmt.Errorf("unknown command: %s", cmd)
 	}
